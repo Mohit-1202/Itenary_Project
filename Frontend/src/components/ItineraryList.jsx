@@ -1,5 +1,6 @@
 import React from "react";
 import ItineraryCard from "./ItineraryCard";
+import { calculateScore } from "../App";
 
 export default function ItineraryList({ itineraries }) {
   if (!itineraries || itineraries.length === 0) {
@@ -10,10 +11,18 @@ export default function ItineraryList({ itineraries }) {
     );
   }
 
+  // Calculate scores
+  const scored = itineraries.map(it => ({
+    ...it,
+    score: calculateScore(it, itineraries),
+  }));
+
+  const bestScore = Math.max(...scored.map(s => s.score || 0));
+
   return (
     <div className="mt-4 sm:mt-6 md:mt-8 px-2 sm:px-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-        {itineraries.map((it, idx) => (
+        {scored.map((it, idx) => (
           <div
             key={idx}
             className="transform transition duration-300 hover:scale-102 hover:shadow-xl animate-fadeIn"
@@ -22,7 +31,7 @@ export default function ItineraryList({ itineraries }) {
               animationFillMode: "both",
             }}
           >
-            <ItineraryCard itinerary={it} />
+            <ItineraryCard itinerary={it} highlight={it.score === bestScore} />
           </div>
         ))}
       </div>
