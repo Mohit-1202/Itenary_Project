@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import UploadItinerary from "./components/UploadItinerary";
 import ItineraryList from "./components/ItineraryList";
-// import ComparisonView from "./components/ComparisonView";
+import ComparisonView from "./components/ComparisonView";
 import Navbar from "./components/Navbar";
 
 // ---------- Score Utilities ----------
@@ -153,10 +153,8 @@ export default function App() {
 
         {/* Results Section */}
         {itineraries.length > 0 && (
-          <div className="bg-gradient-to-r from-blue-50 via-white to-purple-50 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl p-4 sm:p-6">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-center mb-4 sm:mb-6 text-gray-800">
-              Itinerary Comparison Results
-            </h2>
+          <div className="bg-gradient-to-r from-blue-50 via-white to-purple-50 rounded-3xl shadow-2xl p-6">
+            <h2 className="text-3xl font-extrabold text-center mb-6 text-gray-800">Itinerary Comparison Results</h2>
             {viewMode === "cards"
               ? <ItineraryList itineraries={scoredItineraries} />
               : <ComparisonView itineraries={scoredItineraries} bestScore={bestScore} />}
