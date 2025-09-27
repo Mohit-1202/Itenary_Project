@@ -5,7 +5,6 @@ export default function ComparisonView({ itineraries }) {
     <div className="mt-6">
       <h2 className="text-2xl font-bold mb-4">Comparison Results</h2>
 
-      {/* Table layout for comparison */}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow">
           <thead className="bg-gray-100">

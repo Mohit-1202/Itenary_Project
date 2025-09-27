@@ -11,7 +11,6 @@ export default function ItineraryList({ itineraries }) {
     );
   }
 
-  // Calculate scores
   const scored = itineraries.map(it => ({
     ...it,
     score: calculateScore(it, itineraries),
@@ -36,7 +35,6 @@ export default function ItineraryList({ itineraries }) {
         ))}
       </div>
 
-      {/* Tailwind animations */}
       <style>{`
         @keyframes fadeIn {
           0% { opacity: 0; transform: translateY(20px); }

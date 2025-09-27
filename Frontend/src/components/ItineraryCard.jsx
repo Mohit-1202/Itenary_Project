@@ -21,7 +21,6 @@ export default function ItineraryCard({ itinerary, highlight }) {
     <div className={`relative bg-gradient-to-br from-white to-gray-100 rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-2xl p-4 sm:p-6 w-full max-w-xs sm:max-w-sm mx-auto transform transition duration-300 hover:scale-102 hover:shadow-xl
       ${highlight ? "border-2 border-green-400" : "border border-gray-200"}`}>
 
-      {/* Best Option badge */}
       {highlight && (
         <div className="absolute -top-2 -right-2">
           <span className="inline-flex items-center bg-green-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs font-semibold shadow-md">
@@ -30,12 +29,10 @@ export default function ItineraryCard({ itinerary, highlight }) {
         </div>
       )}
 
-      {/* Trip Name */}
       <h3 className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-800 truncate">
         {itinerary.name || "Unnamed Trip"}
       </h3>
 
-      {/* Score */}
       {typeof itinerary.score === "number" && (
         <div className="mt-2 sm:mt-3">
           <div className="flex justify-between text-xs sm:text-sm text-yellow-700 font-medium">
@@ -51,7 +48,6 @@ export default function ItineraryCard({ itinerary, highlight }) {
         </div>
       )}
 
-      {/* Costs & Duration */}
       <div className="mt-3 sm:mt-4 flex justify-between gap-2 sm:gap-3 text-gray-700">
         <div className="flex items-center gap-1 bg-white shadow-sm sm:shadow-md rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium">
           <FaMoneyBillWave className="text-green-600 text-xs sm:text-sm" /> 
@@ -63,7 +59,6 @@ export default function ItineraryCard({ itinerary, highlight }) {
         </div>
       </div>
 
-      {/* Summary */}
       <div className="mt-3 sm:mt-4 p-3 sm:p-4 rounded-lg sm:rounded-xl shadow-sm sm:shadow-md bg-gradient-to-r from-blue-50 via-white to-purple-50 text-gray-800 text-xs sm:text-sm font-medium relative">
         <div className="absolute -top-2 left-3 sm:-top-3 sm:left-4 bg-white rounded-full px-2 py-1 text-xs font-semibold shadow-sm flex items-center gap-1">
           <FaStar className="text-yellow-500 text-xs" /> Summary
@@ -75,7 +70,6 @@ export default function ItineraryCard({ itinerary, highlight }) {
         </p>
       </div>
 
-      {/* Top Activities */}
       {displayActivities.length > 0 && (
         <div className="mt-3 sm:mt-4">
           <h4 className="text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2">Top Activities</h4>

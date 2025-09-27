@@ -125,7 +125,7 @@ export default function App() {
             <ul className="text-yellow-700 list-disc list-inside space-y-1 text-xs sm:text-sm">
               <li>Upload PDFs - extracts trip names from file names</li>
               <li>Use JSON upload for full data control</li>
-              <li>Click "Load Andaman Sample Data" for demo</li>
+              {/* <li>Click "Load Andaman Sample Data" for demo</li> */}
             </ul>
           </div>
         )}

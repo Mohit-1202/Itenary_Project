@@ -71,26 +71,20 @@ export default function UploadItinerary({ onItinerariesUpload }) {
     const duration = itinerary.totalDuration || "Unknown";
     const activities = Array.isArray(itinerary.activities) ? itinerary.activities : [];
 
-    // Truncate long activity names
     const topActivities = activities.slice(0, 3).map(a => a.length > 50 ? a.slice(0, 47) + "..." : a);
 
-    // Sentence templates for variety
     const openingTemplates = [
       () => duration !== "Unknown" ? `Spend ${duration.toLowerCase()} exploring this amazing trip.` : "Embark on an unforgettable journey.",
       () => duration !== "Unknown" ? `A ${duration.toLowerCase()} adventure awaits you.` : "Discover the wonders of this trip.",
       () => duration !== "Unknown" ? `This trip offers ${duration.toLowerCase()} full of excitement and relaxation.` : "Experience a memorable trip filled with highlights.",
     ];
 
-    // Pick a random opening sentence
     const opening = openingTemplates[Math.floor(Math.random() * openingTemplates.length)]();
 
-    // Cost sentence
     const costSentence = cost > 0 ? `Estimated cost: ₹${cost.toLocaleString("en-IN")}.` : "";
 
-    // Activities sentence
     const activitiesSentence = topActivities.length > 0 ? `Key highlights include ${topActivities.join(", ")}.` : "";
 
-    // Optional filler for flavor
     const fillerPhrases = [
       "Perfect for adventure seekers and leisure travelers alike.",
       "A mix of relaxation and sightseeing awaits.",
@@ -100,7 +94,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
     ];
     const filler = fillerPhrases[Math.floor(Math.random() * fillerPhrases.length)];
 
-    // Combine sentences
     const sentences = [opening, costSentence, activitiesSentence, filler].filter(Boolean);
 
     return sentences.join(" ");
@@ -111,7 +104,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
       rawText.replace(/\r/g, " ").replace(/\u00A0/g, " ").replace(/\t/g, " ")
     ).replace(/\s{2,}/g, " ");
 
-    // Duration
     const durationRegex = /(\d+)\s*(?:Nights?|N)\s*\/\s*(\d+)\s*(?:Days?|D)/i;
     const durationMatch = text.match(durationRegex);
     const totalDuration = durationMatch
@@ -120,7 +112,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
       ? `${text.match(/(\d+)\s*days?/i)[1]} Days`
       : "Unknown";
 
-    // Cost
     let totalCost = 0;
     const costPatterns = [
       /\b(?:total|grand\s*total|package\s*cost|package\s*price|amount|rate|price)\b[^\d₹Rs]*₹?\s*Rs?\.?\s*([\d\s,]+)(?:\/-|-)?/i,
@@ -141,7 +132,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
       if (allNumbers.length) totalCost = Math.max(...allNumbers.filter((n) => n > 5000));
     }
 
-    // Activities
     const activities = [];
     const dayBlocks = text.matchAll(/day\s*\d+[\s:-]*(.*?)(?=day\s*\d+|$)/gis);
     for (const block of dayBlocks) {
@@ -158,7 +148,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
       activities: formatActivities(activities),
     };
 
-    // FIXED: Always generate tripSummary using the helper function
     itineraryData.tripSummary = generateTripSummary(itineraryData);
 
     return itineraryData;
@@ -181,14 +170,12 @@ export default function UploadItinerary({ onItinerariesUpload }) {
     try {
       const itineraries = [];
 
-      // JSON parsing - FIXED: Use the same generateTripSummary function
       if (jsonInput.trim()) {
         try {
           const parsedData = JSON.parse(jsonInput);
           const finalData = Array.isArray(parsedData) ? parsedData : [parsedData];
           finalData.forEach((it) => {
             it.activities = formatActivities(it.activities || []);
-            // FIXED: Always generate tripSummary for JSON data too
             it.tripSummary = generateTripSummary(it);
           });
           itineraries.push(...finalData);
@@ -197,7 +184,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
         }
       }
 
-      // PDF parsing
       for (const file of selectedFiles) {
         try {
           const raw = await parsePDF(file);
@@ -205,7 +191,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
           itineraries.push(itinerary);
         } catch (err) {
           console.error("Failed to parse file:", file.name, err);
-          // FIXED: Use the helper function for fallback too
           const fallbackItinerary = {
             name: file.name.replace(".pdf", ""),
             tripName: file.name.replace(".pdf", ""),
