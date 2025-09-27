@@ -9,7 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 export default function UploadItinerary({ onItinerariesUpload }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
+  // const [debugInfo, setDebugInfo] = useState("");
   const [jsonInput, setJsonInput] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
 
@@ -34,7 +34,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
   const parsePDF = async (file) => {
     const typedArray = new Uint8Array(await file.arrayBuffer());
     const pdf = await pdfjsLib.getDocument(typedArray).promise;
-    setDebugInfo((prev) => prev + `\n${file.name}: ${pdf.numPages} pages found`);
 
     let allText = "";
     const worker = await createWorker();
@@ -67,11 +66,52 @@ export default function UploadItinerary({ onItinerariesUpload }) {
     return allText.trim();
   };
 
+  const generateTripSummary = (itinerary) => {
+    const cost = itinerary.totalCost || 0;
+    const duration = itinerary.totalDuration || "Unknown";
+    const activities = Array.isArray(itinerary.activities) ? itinerary.activities : [];
+
+    // Truncate long activity names
+    const topActivities = activities.slice(0, 3).map(a => a.length > 50 ? a.slice(0, 47) + "..." : a);
+
+    // Sentence templates for variety
+    const openingTemplates = [
+      () => duration !== "Unknown" ? `Spend ${duration.toLowerCase()} exploring this amazing trip.` : "Embark on an unforgettable journey.",
+      () => duration !== "Unknown" ? `A ${duration.toLowerCase()} adventure awaits you.` : "Discover the wonders of this trip.",
+      () => duration !== "Unknown" ? `This trip offers ${duration.toLowerCase()} full of excitement and relaxation.` : "Experience a memorable trip filled with highlights.",
+    ];
+
+    // Pick a random opening sentence
+    const opening = openingTemplates[Math.floor(Math.random() * openingTemplates.length)]();
+
+    // Cost sentence
+    const costSentence = cost > 0 ? `Estimated cost: ₹${cost.toLocaleString("en-IN")}.` : "";
+
+    // Activities sentence
+    const activitiesSentence = topActivities.length > 0 ? `Key highlights include ${topActivities.join(", ")}.` : "";
+
+    // Optional filler for flavor
+    const fillerPhrases = [
+      "Perfect for adventure seekers and leisure travelers alike.",
+      "A mix of relaxation and sightseeing awaits.",
+      "Discover culture, cuisine, and breathtaking views.",
+      "Ideal for creating unforgettable memories.",
+      "Experience both adventure and tranquility."
+    ];
+    const filler = fillerPhrases[Math.floor(Math.random() * fillerPhrases.length)];
+
+    // Combine sentences
+    const sentences = [opening, costSentence, activitiesSentence, filler].filter(Boolean);
+
+    return sentences.join(" ");
+  };
+
   const extractItinerary = (rawText, fileName) => {
     let text = collapseDigitSpaces(
       rawText.replace(/\r/g, " ").replace(/\u00A0/g, " ").replace(/\t/g, " ")
     ).replace(/\s{2,}/g, " ");
 
+    // Duration
     const durationRegex = /(\d+)\s*(?:Nights?|N)\s*\/\s*(\d+)\s*(?:Days?|D)/i;
     const durationMatch = text.match(durationRegex);
     const totalDuration = durationMatch
@@ -80,6 +120,7 @@ export default function UploadItinerary({ onItinerariesUpload }) {
       ? `${text.match(/(\d+)\s*days?/i)[1]} Days`
       : "Unknown";
 
+    // Cost
     let totalCost = 0;
     const costPatterns = [
       /\b(?:total|grand\s*total|package\s*cost|package\s*price|amount|rate|price)\b[^\d₹Rs]*₹?\s*Rs?\.?\s*([\d\s,]+)(?:\/-|-)?/i,
@@ -93,7 +134,6 @@ export default function UploadItinerary({ onItinerariesUpload }) {
         break;
       }
     }
-
     if (!totalCost) {
       const allNumbers = [...text.matchAll(/(\d[\d\s,]{3,})/g)].map((m) =>
         parseInt(m[1].replace(/[\s,]/g, ""), 10)
@@ -101,6 +141,7 @@ export default function UploadItinerary({ onItinerariesUpload }) {
       if (allNumbers.length) totalCost = Math.max(...allNumbers.filter((n) => n > 5000));
     }
 
+    // Activities
     const activities = [];
     const dayBlocks = text.matchAll(/day\s*\d+[\s:-]*(.*?)(?=day\s*\d+|$)/gis);
     for (const block of dayBlocks) {
@@ -109,17 +150,18 @@ export default function UploadItinerary({ onItinerariesUpload }) {
     }
     if (!activities.length) activities.push("Sightseeing", "Local activities");
 
-    // Generate summary automatically
-    const summary = `This trip lasts ${totalDuration}, costs approximately ₹${totalCost}, and includes activities such as ${activities.slice(0,3).join(", ")}.`;
-
-    return {
+    const itineraryData = {
       name: fileName.replace(/\.pdf$/i, ""),
       tripName: fileName.replace(/\.pdf$/i, ""),
       totalCost: totalCost || 0,
       totalDuration,
-      activities,
-      tripSummary: summary,
+      activities: formatActivities(activities),
     };
+
+    // FIXED: Always generate tripSummary using the helper function
+    itineraryData.tripSummary = generateTripSummary(itineraryData);
+
+    return itineraryData;
   };
 
   const handleFileSelect = (e) => {
@@ -135,18 +177,19 @@ export default function UploadItinerary({ onItinerariesUpload }) {
 
     setIsLoading(true);
     setError("");
-    setDebugInfo("");
 
     try {
       const itineraries = [];
 
-      // JSON parsing
+      // JSON parsing - FIXED: Use the same generateTripSummary function
       if (jsonInput.trim()) {
         try {
           const parsedData = JSON.parse(jsonInput);
           const finalData = Array.isArray(parsedData) ? parsedData : [parsedData];
-          finalData.forEach(it => {
+          finalData.forEach((it) => {
             it.activities = formatActivities(it.activities || []);
+            // FIXED: Always generate tripSummary for JSON data too
+            it.tripSummary = generateTripSummary(it);
           });
           itineraries.push(...finalData);
         } catch (err) {
@@ -158,17 +201,23 @@ export default function UploadItinerary({ onItinerariesUpload }) {
       for (const file of selectedFiles) {
         try {
           const raw = await parsePDF(file);
-          itineraries.push(extractItinerary(raw, file.name));
+          const itinerary = extractItinerary(raw, file.name);
+          itineraries.push(itinerary);
         } catch (err) {
           console.error("Failed to parse file:", file.name, err);
-          itineraries.push({
+          // FIXED: Use the helper function for fallback too
+          const fallbackItinerary = {
             name: file.name.replace(".pdf", ""),
+            tripName: file.name.replace(".pdf", ""),
             totalCost: 0,
             totalDuration: "Unknown",
             activities: ["Adventure", "Sightseeing"],
-          });
+          };
+          fallbackItinerary.tripSummary = generateTripSummary(fallbackItinerary);
+          itineraries.push(fallbackItinerary);
         }
       }
+
 
       if (itineraries.length) {
         onItinerariesUpload(itineraries);
@@ -186,63 +235,62 @@ export default function UploadItinerary({ onItinerariesUpload }) {
   const isParseButtonDisabled = !selectedFiles.length && !jsonInput.trim();
 
   return (
-    <div className="w-full flex flex-col justify-center items-center p-6">
-      <div className="max-w-4xl w-full p-8 bg-gradient-to-r from-blue-50 via-white to-purple-50 rounded-3xl shadow-2xl space-y-8">
-        <h2 className="text-3xl font-extrabold text-gray-800 text-center">
+    <div className="w-full flex flex-col justify-center items-center p-3 sm:p-4 md:p-6">
+      <div className="w-full max-w-4xl p-4 sm:p-6 md:p-8 bg-gradient-to-r from-blue-50 via-white to-purple-50 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl space-y-4 sm:space-y-6 md:space-y-8">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-800 text-center">
           ✨ Upload or Paste Itinerary Data
         </h2>
 
-        {/* PDF Upload */}
         <div>
-          <h3 className="text-lg font-semibold mb-2 text-gray-800">Upload PDF Files</h3>
+          <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-gray-800">Upload PDF Files</h3>
           <input
             type="file"
             accept=".pdf"
             multiple
             onChange={handleFileSelect}
             disabled={isLoading}
-            className="block w-full border-2 border-dashed border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-blue-400 transition"
+            className="block w-full text-xs sm:text-sm md:text-base border-2 border-dashed border-gray-300 rounded-lg p-2 sm:p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-blue-400 transition"
           />
           {selectedFiles.length > 0 && (
-            <div className="mt-2 text-gray-600 text-sm">{selectedFiles.length} file(s) selected</div>
+            <div className="mt-1 sm:mt-2 text-gray-600 text-xs sm:text-sm">{selectedFiles.length} file(s) selected</div>
           )}
         </div>
 
-        {/* JSON Paste */}
         <div>
-          <h3 className="text-lg font-semibold mb-2 text-gray-800">Paste JSON Data</h3>
+          <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-gray-800">Paste JSON Data</h3>
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
-            rows="6"
+            rows="3"
+            className="w-full text-xs sm:text-sm md:text-base border border-gray-300 rounded-lg p-2 sm:p-3 font-mono focus:ring-2 focus:ring-purple-500 resize-none"
             placeholder='Example: [{"name":"Trip 1","totalCost":25000,"totalDuration":"5 Days","activities":["Beach","Hiking"]}]'
-            className="w-full border border-gray-300 rounded-lg p-3 font-mono text-sm focus:ring-2 focus:ring-purple-500 resize-none"
           />
         </div>
 
-        {/* Parse Button */}
         <button
           onClick={handleParseClick}
           disabled={isParseButtonDisabled || isLoading}
-          className={`mt-3 w-full py-2 px-4 font-semibold rounded-lg shadow-md transition
+          className={`w-full py-2 sm:py-3 px-4 text-sm sm:text-base font-semibold rounded-lg shadow-md transition
             ${isParseButtonDisabled || isLoading
               ? "bg-gray-300 text-gray-600 cursor-not-allowed"
               : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl"
             }`}
         >
-          {isLoading ? "Parsing Itinerary Data..." : "Parse Itinerary Data"}
+          {isLoading ? "📊 Parsing Itinerary Data..." : "🚀 Parse Itinerary Data"}
         </button>
 
-        {/* Errors */}
-        {error && <div className="p-3 rounded-lg text-sm bg-red-50 text-red-700">{error}</div>}
-
-        {/* Debug Info */}
-        {debugInfo && (
-          <details className="mt-4 border border-gray-200 rounded-lg">
-            <summary className="cursor-pointer text-sm p-2 bg-gray-100">Debug Info</summary>
-            <pre className="text-xs p-2 bg-gray-50 max-h-56 overflow-auto">{debugInfo}</pre>
-          </details>
+        {error && (
+          <div className="p-2 sm:p-3 rounded-lg text-xs sm:text-sm bg-red-50 text-red-700">
+            {error}
+          </div>
         )}
+
+        {/* {debugInfo && (
+          <details className="border border-gray-200 rounded-lg">
+            <summary className="cursor-pointer text-xs sm:text-sm p-2 bg-gray-100">🔧 Debug Info</summary>
+            <pre className="text-xs p-2 bg-gray-50 max-h-32 sm:max-h-48 md:max-h-56 overflow-auto">{debugInfo}</pre>
+          </details>
+        )} */}
       </div>
     </div>
   );

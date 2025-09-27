@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // utils/calculateMetrics.js
 
 // Convert cost string to number if needed
